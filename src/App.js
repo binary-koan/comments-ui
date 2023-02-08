@@ -7,6 +7,7 @@ import {hasMode} from './utils/check-mode';
 import setupGhostApi from './utils/api';
 import ContentBox from './components/ContentBox';
 import PopupBox from './components/PopupBox';
+import {io} from 'socket.io-client';
 
 function AuthFrame({adminUrl, onLoad}) {
     if (!adminUrl) {
@@ -74,6 +75,8 @@ export default class App extends React.Component {
             };
 
             this.setState(state);
+
+            this.setupRealtimeCount();
         } catch (e) {
             /* eslint-disable no-console */
             console.error(`[Comments] Failed to initialize:`, e);
@@ -189,6 +192,18 @@ export default class App extends React.Component {
             pagination: data.meta.pagination,
             count: count
         };
+    }
+
+    setupRealtimeCount() {
+        const socket = io(this.props.siteUrl);
+
+        socket.emit('listen:members/comments/counts', {
+            ids: [this.state.postId]
+        });
+
+        socket.on('members/comments/counts/update', ({counts}) => {
+            this.setState({commentCount: counts[this.state.postId]});
+        });
     }
 
     setupAdminAPI() {
