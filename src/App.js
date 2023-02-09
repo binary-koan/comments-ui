@@ -7,7 +7,7 @@ import {hasMode} from './utils/check-mode';
 import setupGhostApi from './utils/api';
 import ContentBox from './components/ContentBox';
 import PopupBox from './components/PopupBox';
-import {io} from 'socket.io-client';
+import setupRealtimeSocket from './utils/realtime';
 
 function AuthFrame({adminUrl, onLoad}) {
     if (!adminUrl) {
@@ -52,6 +52,7 @@ export default class App extends React.Component {
         };
         this.adminApi = null;
         this.GhostApi = null;
+        this.socket = null;
 
         // Bind to make sure we have a variable reference (and don't need to create a new binded function in our context value every time the state changes)
         this.dispatchAction = this.dispatchAction.bind(this);
@@ -195,14 +196,11 @@ export default class App extends React.Component {
     }
 
     setupRealtimeCount() {
-        const socket = io(this.props.siteUrl);
+        this.socket = setupRealtimeSocket({
+            siteUrl: this.props.siteUrl,
+            postId: this.props.postId,
 
-        socket.emit('listen:members/comments/counts', {
-            ids: [this.state.postId]
-        });
-
-        socket.on('members/comments/counts/update', ({counts}) => {
-            this.setState({commentCount: counts[this.state.postId]});
+            onCommentCountUpdate: commentCount => this.setState({commentCount})
         });
     }
 
@@ -319,6 +317,10 @@ export default class App extends React.Component {
     componentWillUnmount() {
         /**Clear timeouts and event listeners on unmount */
         clearTimeout(this.timeoutId);
+
+        if (this.socket) {
+            this.socket.disconnect(true);
+        }
     }
 
     render() {
