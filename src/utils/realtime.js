@@ -1,14 +1,14 @@
 import {io} from 'socket.io-client';
 
-function setupRealtimeSocket({siteUrl = window.location.origin, postId, onCommentCountUpdate}) {
-    const socket = io(siteUrl);
+function setupRealtimeSocket({siteUrl, postId, onCommentCountUpdate, socketIO = io}) {
+    const socket = socketIO(siteUrl);
 
     socket.emit('members/comments/counts:listen', {
         ids: [postId]
     });
 
     socket.on('members/comments/counts:update', ({counts}) => {
-        onCommentCountUpdate(counts[this.state.postId]);
+        onCommentCountUpdate?.(counts[postId]);
     });
 
     return socket;
